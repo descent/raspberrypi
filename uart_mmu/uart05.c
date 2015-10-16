@@ -39,7 +39,8 @@ int notmain ( void )
 
   uart_init();
 
-  //hexstring(0x12345678);
+  uart_send(0x0D);
+  uart_send(0x0A);
 
   // uart_send
 
