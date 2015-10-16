@@ -4,9 +4,13 @@ ARMGNU ?= arm-linux-gnueabihf
 
 COPS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding 
 
-gcc : uart05.bin
+uart_mmu.bin : uart_mmu.elf
+	$(ARMGNU)-objdump -D $< > uart05.list
+	$(ARMGNU)-objcopy $< -O ihex $@.hex
+	$(ARMGNU)-objcopy $< -O binary $@
 
-all : gcc clang
+uart_mmu.elf : start.o periph.o uart05.o cortex_a_mmu.o
+	$(ARMGNU)-ld $^ -T memmap -o $@
 
 clean :
 	rm -f *.o
@@ -23,15 +27,12 @@ start.o : start.s
 
 uart05.o : uart05.c
 	$(ARMGNU)-gcc $(COPS) -c uart05.c -o uart05.o
+cortex_a_mmu.o: cortex_a_mmu.c
+	$(ARMGNU)-gcc $(COPS) -c $<
 
 periph.o : periph.c
 	$(ARMGNU)-gcc $(COPS) -c periph.c -o periph.o
 
-uart05.bin : memmap start.o periph.o uart05.o 
-	$(ARMGNU)-ld start.o periph.o uart05.o -T memmap -o uart05.elf
-	$(ARMGNU)-objdump -D uart05.elf > uart05.list
-	$(ARMGNU)-objcopy uart05.elf -O ihex uart05.hex
-	$(ARMGNU)-objcopy uart05.elf -O binary uart05.bin
 
 
 
@@ -49,6 +50,7 @@ uart05.bc : uart05.c
 
 periph.bc : periph.c
 	clang $(LOPS) -c periph.c -o periph.bc
+
 
 uart05.clang.elf : memmap start.o uart05.bc periph.bc
 	llvm-link periph.bc uart05.bc -o uart05.nopt.bc
